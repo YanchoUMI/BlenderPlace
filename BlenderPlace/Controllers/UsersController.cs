@@ -10,17 +10,14 @@ namespace BlenderPlace.Controllers
     {
         private readonly ApplicationDbContext context;
         private readonly UserManager<ApplicationUser> _userManager;
-        private readonly RoleManager<IdentityRole> _roleManager;
         private readonly ApplicationDbContext _dbContext;
 
         public UsersController(ApplicationDbContext context,
                                 UserManager<ApplicationUser> userManager,
-                                RoleManager<IdentityRole> roleManager,
                                 ApplicationDbContext dbContext)
         {
             this.context = context;
             this._userManager = userManager;
-            this._roleManager = roleManager;
             this._dbContext = dbContext;
         }
 

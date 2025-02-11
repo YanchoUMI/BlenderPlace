@@ -22,20 +22,10 @@
 		<div class="row col-6">
 			<div class="card">
 				<div class="card-body gap-1">
-					<p style="border-bottom: 1px solid #ccc;"><strong>Category:</strong> @GetCategoryDisplayName(Model.Category)</p>
+					<p style="border-bottom: 1px solid #ccc;"><strong>Category:</strong> @Model.Category.ToString()</p>
 					<p style="border-bottom: 1px solid #ccc;"><strong>Description:</strong> @Model.Description</p>
 				</div>
 			</div>
 		</div>
 	</div>
 </div>
-
-@functions {
-	private string GetCategoryDisplayName(Category category)
-	{
-		var field = category.GetType().GetField(category.ToString());
-		var displayAttribute = (DisplayAttribute)Attribute.GetCustomAttribute(field, typeof(DisplayAttribute));
-
-		return displayAttribute == null ? category.ToString() : displayAttribute.Name;
-	}
-}

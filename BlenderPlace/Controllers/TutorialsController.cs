@@ -112,7 +112,7 @@ namespace BlenderPlace.Controllers
 
             var userId = User.Claims.FirstOrDefault(a => a.Type == ClaimTypes.NameIdentifier)?.Value;
 
-            if (tutorial?.CreatorId != userId)
+            if (!User.IsInRole("Admin") && tutorial?.CreatorId != userId)
 			{
 				return Forbid();
 			}
