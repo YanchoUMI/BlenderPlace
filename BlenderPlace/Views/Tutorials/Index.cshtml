@@ -1,0 +1,249 @@
+﻿@using BlenderPlace.Database
+@using System.Security.Claims
+@using Microsoft.AspNetCore.Identity
+@model IEnumerable<BlenderPlace.Database.Tutorial>
+@inject UserManager<ApplicationUser> UserManager
+@inject SignInManager<ApplicationUser> SignInManager
+@inject UserManager<ApplicationUser> UserManager
+
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>@ViewData["Title"]</title>
+
+
+	<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+	<link rel="stylesheet" href="/css/card-styles.css" asp-append-version="true" />
+</head>
+
+<body>
+	@if (SignInManager.IsSignedIn(User))
+	{
+		var userId = User.Claims.FirstOrDefault(a => a.Type == ClaimTypes.NameIdentifier)?.Value;
+
+		if (userId == null)
+		{
+			throw new ArgumentException("Invalid user.");
+		}
+		var user = await UserManager.FindByIdAsync(userId);
+	}
+	<style>
+		.sorting {
+			display: flex;
+			justify-content: space-between;
+		}
+
+		.mat-des {
+			display: flex;
+			justify-content: space-between;
+		}
+
+		.p {
+			margin-bottom: 0px;
+		}
+
+		.postcard {
+			color: lightblue;
+		}
+	</style>
+
+	<main>
+		<div class="container mt-0">
+			<form asp-controller="Tutorials" asp-action="Index" method="get">
+
+				<div class="row">
+					<div class="col-md-6">
+						<div class="form-group">
+							<label for="pageSize">Tutorial count per page:</label>
+							<select class="form-select" id="pageSize" name="pageSize">
+								<option value="5">5</option>
+								<option value="10">10</option>
+								<option value="15">15</option>
+							</select>
+							<button style="background:lightblue;" class="btn mt-2" id="applyPageSize">Apply</button>
+						</div>
+					</div>
+					<div class="col-md-6">
+						<div class="form-group">
+							<label for="sortOrder">Sort By:</label>
+							<select class="form-select" id="sortByDate" name="sortOrder">
+								<option value="">Choose</option>
+								<option value="date_desc">Latest</option>
+								<option value="date_asc">Oldest</option>
+							</select>
+							<button style="background:lightblue;" type="submit" class="btn mt-2">Apply</button>
+						</div>
+					</div>
+				</div>
+
+				<hr>
+
+				<div class="row">
+					<div class="col-md-3">
+						<div class="form-group">
+							<label for="searchInput">Search:</label>
+							<input type="search" class="form-control" name="search" id="searchInput" value="@ViewBag.Search" />
+						</div>
+					</div>
+					<div class="col-md-3">
+						<div class="form-group">
+							<label for="createdNameInput">Creator:</label>
+							<input type="search" class="form-control" name="createdName" id="createdNameInput" value="@ViewBag.CreatedName" />
+						</div>
+					</div>
+					<div class="col-md-3">
+						<div class="form-group">
+							<label for="categorySelect">Category:</label>
+							<select class="form-select" name="category" id="categorySelect">
+								<option value="">Choose Category</option>
+								@foreach (var categoryValue in Enum.GetValues(typeof(Category)))
+								{
+									<option value="@categoryValue">@categoryValue</option>
+								}
+							</select>
+						</div>
+					</div>
+				</div>
+
+				<div class="row">
+					<div class="col-md-3">
+						<button style="background:lightblue;" type="submit" class="btn">Filter</button>
+					</div>
+				</div>
+			</form>
+			@if (!User.IsInRole("User"))
+			{
+				<a style="background:lightblue;" asp-action="Add" asp-controller="Tutorials" class="btn d-block mb-3 mt-3">
+					Add New Tutorial
+				</a>
+			}
+		</div>
+		<div class="container py-2">
+			<div class="h1 text-center text-dark" id="pageHeaderTitle">Tutorials</div>
+			@foreach (var tutorial in Model)
+			{
+
+				<article class="postcard light blue search" style="background-image: url(@tutorial.URL); background-repeat: no-repeat; background-size: cover;">
+					<div class="postcard__text t-dark">
+						<h1 class="postcard__title blue name mx-auto" style="background-color: rgba(0,0,0,0.25);color: white;padding: 5px;"><a href="#">@tutorial.Title</a></h1>
+						<div class="postcard__subtitle small mx-auto">
+							<time datetime="2020-05-25 12:00:00" style="background-color: rgba(0,0,0,0.25);color: white;padding: 5px;">
+								<i class="fas fa-calendar-alt mr-2"></i>@tutorial.CreateDate.ToShortDateString()
+							</time>
+						</div>
+						<div class="postcard__bar mx-auto"></div>
+						<div class="mat-des">
+							<div>
+								<ul class="postcard__tagbox">
+									<li class="tag__item"><i class="fas fa-tag mr-2"></i>@tutorial.CreatedByName</li>
+									<li class="tag__item"><i class="fas fa-tag mr-2"></i>@tutorial.Category.ToString()</li>
+								</ul>
+							</div>
+							<div>
+								<ul class="postcard__tagbox">
+									<li style="background:none" class="tag__item play blue">
+										<a asp-action="Details" asp-route-id="@tutorial.Id" class="btn btn-secondary">View</a>
+									</li>
+									@if (User.IsInRole("Admin"))
+									{
+										<li style="background:none" class="tag__item play blue">
+											<a asp-action="Edit" asp-route-id="@tutorial.Id" class="btn btn-secondary">Edit</a>
+										</li>
+
+										<li style="background:none" class="tag__item play blue">
+											<form asp-action="Delete" asp-route-id="@tutorial.Id" method="post" onsubmit="return confirm('Are you sure you want to delete this tutorial?');">
+												<button type="submit" class="btn btn-secondary">Delete</button>
+											</form>
+
+										</li>
+									}
+									@if (User.IsInRole("Creator"))
+									{
+										var userId = User.Claims.FirstOrDefault(a => a.Type == ClaimTypes.NameIdentifier)?.Value;
+										if (userId != null && tutorial.CreatorId == userId)
+										{
+											<li style="background:none" class="tag__item play blue">
+												<a asp-action="Edit" asp-route-id="@tutorial.Id" class="btn btn-secondary">Edit</a>
+											</li>
+
+											<li style="background:none" class="tag__item play blue">
+												<form asp-action="Delete" asp-route-id="@tutorial.Id" method="post" onsubmit="return confirm('Are you sure you want to delete this tutorial?');">
+													<button type="submit" class="btn btn-secondary">Delete</button>
+												</form>
+
+											</li>
+										}
+									}
+								</ul>
+							</div>
+						</div>
+					</div>
+				</article>
+			}
+		</div>
+		<div class="container d-flex justify-content-center mb-5">
+			<div class="text-center">
+				<nav aria-label="Page navigation">
+					<ul class="pagination mb-0">
+						<li class="page-item @(ViewBag.CurrentPage == 1 ? "disabled" : "")">
+							<a class="page-link" asp-action="Index" asp-controller="Tutorials"
+							   asp-route-pageNumber="1" asp-route-pageSize="@ViewBag.PageSize">First</a>
+						</li>
+						<li class="page-item @(ViewBag.CurrentPage == 1 ? "disabled" : "")">
+							<a class="page-link" asp-action="Index" asp-controller="Tutorials"
+							   asp-route-pageNumber="@(ViewBag.CurrentPage - 1)" asp-route-pageSize="@ViewBag.PageSize">Previous</a>
+						</li>
+						<li class="page-item">
+							<a class="page-link">Page @(ViewBag.CurrentPage) of @(ViewBag.TotalPages)</a>
+						</li>
+						<li class="page-item @(ViewBag.CurrentPage == ViewBag.TotalPages ? "disabled" : "")">
+							<a class="page-link" asp-action="Index" asp-controller="Tutorials"
+							   asp-route-pageNumber="@(ViewBag.CurrentPage + 1)" asp-route-pageSize="@ViewBag.PageSize">Next</a>
+						</li>
+						<li class="page-item @(ViewBag.CurrentPage == ViewBag.TotalPages ? "disabled" : "")">
+							<a class="page-link" asp-action="Index" asp-controller="Tutorials"
+							   asp-route-pageNumber="@ViewBag.TotalPages" asp-route-pageSize="@ViewBag.PageSize">Last</a>
+						</li>
+					</ul>
+				</nav>
+			</div>
+		</div>
+	</main>
+	<script>
+		function sortTutorials() {
+			var sortOrder = document.getElementById("sortByDate").value;
+
+			var url = "/Tutorials/Index?pageSize=@ViewBag.PageSize&sortOrder=" + sortOrder;
+			window.location.href = url;
+		}
+	</script>
+
+	@section scripts {
+		<script>
+			document.addEventListener("DOMContentLoaded", function () {
+				// Attach event listener to the Apply button
+				document.getElementById("applyPageSize").addEventListener("click", function () {
+					// Get the selected page size
+					var pageSizeDropdown = document.getElementById("pageSize");
+					var pageSize = pageSizeDropdown.value;
+
+					// Set the selected value in the dropdown
+					for (var i = 0; i < pageSizeDropdown.options.length; i++) {
+						if (pageSizeDropdown.options[i].value === pageSize) {
+							pageSizeDropdown.selectedIndex = i;
+							break;
+						}
+					}
+
+					// Redirect to the Index action with the selected page size as a query parameter
+					window.location.href = "/Tutorials/Index?pageSize=" + pageSize;
+				});
+			});
+		</script>
+	}
+	<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.16.0/umd/popper.min.js"></script>
+	<script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+</body>
+</html>

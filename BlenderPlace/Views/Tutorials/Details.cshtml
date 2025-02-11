@@ -1,0 +1,41 @@
+﻿@using BlenderPlace.Database
+@using System.Security.Claims
+@using Microsoft.AspNetCore.Identity
+@using System.ComponentModel.DataAnnotations
+@model BlenderPlace.Database.Tutorial
+@inject UserManager<ApplicationUser> UserManager
+
+@{
+	ViewData["Title"] = "Staterial Details";
+}
+<head>
+</head>
+
+<div class="container mb-4" style="height:75vh;">
+	<div class="row">
+		<h5 class="card-title">@Model.Title</h5>
+	</div>
+	<div class="d-flex gap-5">
+		<div class="row col-6">
+			<img class="card-img-top" src="@Model.URL" alt="Card image cap">
+		</div>
+		<div class="row col-6">
+			<div class="card">
+				<div class="card-body gap-1">
+					<p style="border-bottom: 1px solid #ccc;"><strong>Category:</strong> @GetCategoryDisplayName(Model.Category)</p>
+					<p style="border-bottom: 1px solid #ccc;"><strong>Description:</strong> @Model.Description</p>
+				</div>
+			</div>
+		</div>
+	</div>
+</div>
+
+@functions {
+	private string GetCategoryDisplayName(Category category)
+	{
+		var field = category.GetType().GetField(category.ToString());
+		var displayAttribute = (DisplayAttribute)Attribute.GetCustomAttribute(field, typeof(DisplayAttribute));
+
+		return displayAttribute == null ? category.ToString() : displayAttribute.Name;
+	}
+}
