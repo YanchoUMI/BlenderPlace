@@ -29,5 +29,8 @@ namespace BlenderPlace.Database
 
         [ValidateNever]
         public string CreatedByName { get; set; }
+
+        [ValidateNever]
+        public List<ApplicationUser> FavoritedByUsers { get; set; } = new List<ApplicationUser>();
     }
 }

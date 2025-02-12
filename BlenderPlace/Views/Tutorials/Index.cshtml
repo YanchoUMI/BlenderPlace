@@ -1,10 +1,12 @@
 ﻿@using BlenderPlace.Database
 @using System.Security.Claims
 @using Microsoft.AspNetCore.Identity
+@using Microsoft.EntityFrameworkCore
 @model IEnumerable<BlenderPlace.Database.Tutorial>
 @inject UserManager<ApplicationUser> UserManager
 @inject SignInManager<ApplicationUser> SignInManager
 @inject UserManager<ApplicationUser> UserManager
+@inject ApplicationDbContext DbContext
 
 <html lang="en">
 <head>
@@ -12,7 +14,7 @@
 	<meta name="viewport" content="width=device-width, initial-scale=1">
 	<title>@ViewData["Title"]</title>
 
-
+	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" integrity="sha512-Evv84Mr4kqVGRNSgIGL/F/aIDqQb7xQ2vcrdIwxfjThSH8CSR7PBEakCr51Ck+w+/U6swU2Im1vVX0SVk9ABhg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
 	<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
 	<link rel="stylesheet" href="/css/card-styles.css" asp-append-version="true" />
 </head>
@@ -30,21 +32,21 @@
 	}
 	<style>
 		.sorting {
-			display: flex;
-			justify-content: space-between;
+		display: flex;
+		justify-content: space-between;
 		}
 
 		.mat-des {
-			display: flex;
-			justify-content: space-between;
+		display: flex;
+		justify-content: space-between;
 		}
 
 		.p {
-			margin-bottom: 0px;
+		margin-bottom: 0px;
 		}
 
 		.postcard {
-			color: lightblue;
+		color: lightblue;
 		}
 	</style>
 
@@ -125,6 +127,29 @@
 			{
 
 				<article class="postcard light blue search" style="background-image: url(@tutorial.URL); background-repeat: no-repeat; background-size: cover;">
+
+					@if(User.IsInRole("User"))
+					{
+						var userId = User.Claims.FirstOrDefault(a => a.Type == ClaimTypes.NameIdentifier)?.Value;
+
+						if (userId == null)
+						{
+							throw new ArgumentException("Invalid user.");
+						}
+
+						var user = await DbContext.Users.Include(u => u.FavoriteTutorials).FirstAsync(u => u.Id == userId);
+						var tutorialIds = user.FavoriteTutorials.Select(t => t.Id).ToList();
+
+						if (tutorialIds.Contains(tutorial.Id))
+						{
+							<a class="fa-solid fa-heart m-3 blue" style="font-size: 32px; position: relative; z-index: 1000;" asp-action="ToggleFavorite" asp-route-id="@tutorial.Id"></a>
+						}
+						else
+						{
+							<a class="fa-regular fa-heart m-3 blue" style="font-size: 32px; position: relative; z-index: 1000;" asp-action="ToggleFavorite" asp-route-id="@tutorial.Id"></a>
+						}
+					}
+					
 					<div class="postcard__text t-dark">
 						<h1 class="postcard__title blue name mx-auto" style="background-color: rgba(0,0,0,0.25);color: white;padding: 5px;"><a href="#">@tutorial.Title</a></h1>
 						<div class="postcard__subtitle small mx-auto">
@@ -190,17 +215,21 @@
 							<a class="page-link" asp-action="Index" asp-controller="Tutorials"
 							   asp-route-pageNumber="1" asp-route-pageSize="@ViewBag.PageSize">First</a>
 						</li>
+
 						<li class="page-item @(ViewBag.CurrentPage == 1 ? "disabled" : "")">
 							<a class="page-link" asp-action="Index" asp-controller="Tutorials"
 							   asp-route-pageNumber="@(ViewBag.CurrentPage - 1)" asp-route-pageSize="@ViewBag.PageSize">Previous</a>
 						</li>
+
 						<li class="page-item">
 							<a class="page-link">Page @(ViewBag.CurrentPage) of @(ViewBag.TotalPages)</a>
 						</li>
+
 						<li class="page-item @(ViewBag.CurrentPage == ViewBag.TotalPages ? "disabled" : "")">
 							<a class="page-link" asp-action="Index" asp-controller="Tutorials"
 							   asp-route-pageNumber="@(ViewBag.CurrentPage + 1)" asp-route-pageSize="@ViewBag.PageSize">Next</a>
 						</li>
+
 						<li class="page-item @(ViewBag.CurrentPage == ViewBag.TotalPages ? "disabled" : "")">
 							<a class="page-link" asp-action="Index" asp-controller="Tutorials"
 							   asp-route-pageNumber="@ViewBag.TotalPages" asp-route-pageSize="@ViewBag.PageSize">Last</a>

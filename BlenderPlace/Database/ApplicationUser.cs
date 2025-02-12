@@ -9,5 +9,7 @@ namespace BlenderPlace.Database
         public string? FirstName { get; set; }
 
         public string? LastName { get; set; }
+
+        public List<Tutorial> FavoriteTutorials { get; set; } = new List<Tutorial>();
     }
 }

@@ -21,7 +21,14 @@ namespace BlenderPlace.Controllers
 
 		public IActionResult Index(string sortOrder, int? pageSize, int? pageNumber, string createdName, string category, string search)
 		{
+            var userId = User.Claims.FirstOrDefault(a => a.Type == ClaimTypes.NameIdentifier)?.Value;
 			var tutorials = context.Tutorials.AsQueryable();
+
+			if (userId != null)
+			{
+				tutorials = tutorials
+					.OrderByDescending(t => t.FavoritedByUsers.Any(u => u.Id == userId)); // Prioritize favorited
+			}
 
 			if (!string.IsNullOrEmpty(createdName))
 			{
@@ -48,8 +55,8 @@ namespace BlenderPlace.Controllers
 					tutorials = tutorials.OrderByDescending(t => t.CreateDate);
 					break;
 				default:
-					tutorials = tutorials.OrderBy(t => t.CreateDate);
-					break;
+					tutorials = tutorials.OrderByDescending(t => t.FavoritedByUsers.Any(u => u.Id == userId));
+                    break;
 			}
 
 			pageSize = pageSize ?? 5;
@@ -164,16 +171,37 @@ namespace BlenderPlace.Controllers
             return View(tutorial);
 		}
 
-		public IActionResult Ascending()
+		public async Task<IActionResult> ToggleFavorite(int id)
 		{
-			var tutorials = context.Tutorials.OrderBy(s => s.CreateDate).ToList();
-			return View("Index", tutorials);
-		}
+            var userId = User.Claims.FirstOrDefault(a => a.Type == ClaimTypes.NameIdentifier)?.Value;
 
-		public IActionResult Descending()
-		{
-			var tutorials = context.Tutorials.OrderByDescending(s => s.CreateDate).ToList();
-			return View("Index", tutorials);
+            if (userId == null)
+            {
+                throw new ArgumentException("Invalid User.");
+            }
+
+            var user = await context.Users.Include(u => u.FavoriteTutorials).FirstAsync(u => u.Id == userId);
+			var tutorialIds = user.FavoriteTutorials.Select(t => t.Id).ToList();
+
+			var tutorial = await context.Tutorials.FindAsync(id);
+			if (tutorial == null)
+			{
+				return NotFound();
+			}
+
+			// if user has this tutorial in faves, remove it
+			if (tutorialIds.Contains(tutorial.Id))
+			{
+				user.FavoriteTutorials.Remove(tutorial);
+			}
+            else // otherwise, add it
+            {
+				user.FavoriteTutorials.Add(tutorial);
+            }
+
+			await context.SaveChangesAsync();
+
+            return RedirectToAction("Index");
 		}
 	}
 }
